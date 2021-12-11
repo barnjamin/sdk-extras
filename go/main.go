@@ -11,6 +11,7 @@ import (
 	"github.com/algorand/go-algorand-sdk/crypto"
 	"github.com/algorand/go-algorand-sdk/encoding/msgpack"
 	"github.com/algorand/go-algorand-sdk/future"
+	"github.com/algorand/go-algorand-sdk/transaction"
 	"github.com/algorand/go-algorand-sdk/types"
 )
 
@@ -52,42 +53,39 @@ func main() {
 		log.Fatalf("Failed to create logic transaction: %+v", err)
 	}
 
-	gid, _ := crypto.ComputeGroupID([]types.Transaction{
+	txns, _ := transaction.AssignGroupID([]types.Transaction{
 		pay_txn, app_txn, logic_txn,
-	})
+	}, "")
 
-	pay_txn.Group = gid
-	app_txn.Group = gid
-	logic_txn.Group = gid
-
-	_, s_pay_bytes, err := crypto.SignTransaction(accts[0].PrivateKey, pay_txn)
+	_, s_pay_bytes, err := crypto.SignTransaction(accts[0].PrivateKey, txns[0])
 	if err != nil {
 		log.Fatalf("Failed to sign pay txn: %+v", err)
 	}
 	s_pay := types.SignedTxn{}
-	_ = msgpack.Decode(s_pay_bytes, &s_pay)
+	msgpack.Decode(s_pay_bytes, &s_pay)
 
-	_, s_app_bytes, err := crypto.SignTransaction(accts[0].PrivateKey, app_txn)
+	_, s_app_bytes, err := crypto.SignTransaction(accts[0].PrivateKey, txns[1])
 	if err != nil {
 		log.Fatalf("Failed to sign app txn: %+v", err)
 	}
 	s_app := types.SignedTxn{}
-	_ = msgpack.Decode(s_app_bytes, &s_app)
+	msgpack.Decode(s_app_bytes, &s_app)
 
-	_, s_logic_bytes, err := crypto.SignLogicSigAccountTransaction(lsa, logic_txn)
+	_, s_logic_bytes, err := crypto.SignLogicSigAccountTransaction(lsa, txns[2])
 	if err != nil {
 		log.Fatalf("Failed to sign logic txn: %+v", err)
 	}
 	s_logic := types.SignedTxn{}
-	_ = msgpack.Decode(s_logic_bytes, &s_logic)
+	msgpack.Decode(s_logic_bytes, &s_logic)
 
 	drr, err := future.CreateDryrun(client, []types.SignedTxn{s_pay, s_app, s_logic}, nil)
 	if err != nil {
 		log.Fatalf("Failed to create dryrun: %+v", err)
 	}
 
-	os.WriteFile("go-drr.msgp", msgpack.Encode(drr), 0666)
-	log.Printf("Wrote to file")
+	filename := "go-drr.msgp"
+	os.WriteFile(filename, msgpack.Encode(drr), 0666)
+	log.Printf("Wrote to file: %s", filename)
 }
 
 func getLogic(client *algod.Client) crypto.LogicSigAccount {
