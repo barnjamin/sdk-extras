@@ -47,7 +47,7 @@ async function generateDryrun(){
 async function getLogicSig(): Promise<algosdk.LogicSigAccount> {
     const logic = fs.readFileSync("../logic.teal");
     const result = await client.compile(logic).do()
-    return new algosdk.LogicSigAccount(Buffer.from(result['result'], 'base64'), [Buffer.from("test")])
+    return new algosdk.LogicSigAccount(Buffer.from(result['result'], 'base64'))
 }
 
 (async function(){

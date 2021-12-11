@@ -32,7 +32,7 @@ export async function getAccounts(): Promise<algosdk.Account[]> {
     kmdClient.releaseWalletHandle(handle)
 
     return keys.map((k)=>{
-        const addr = algosdk.encodeAddress(k.private_key.slice(0, 32))
+        const addr = algosdk.encodeAddress(k.private_key.slice(32))
         const acct = {sk:k.private_key, addr: addr} as algosdk.Account
         return acct
     })
