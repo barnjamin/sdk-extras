@@ -14,6 +14,79 @@
   </properties>
 
   <dependencies>
+          <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-annotations</artifactId>
+          <version>2.10.0</version>
+        </dependency>
+        <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-core</artifactId>
+          <version>2.10.0</version>
+        </dependency>
+        <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+          <version>2.10.5.1</version>
+        </dependency>
+              <dependency>
+          <groupId>com.squareup.okhttp</groupId>
+          <artifactId>logging-interceptor</artifactId>
+          <version>2.7.5</version>
+        </dependency>
+        <dependency>
+          <groupId>com.squareup.okhttp</groupId>
+          <artifactId>okhttp</artifactId>
+          <version>2.7.5</version>
+        </dependency>
+        <dependency>
+          <groupId>com.squareup.okio</groupId>
+          <artifactId>okio</artifactId>
+          <version>1.6.0</version>
+        </dependency>
+        <dependency>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+          <!-- version 1.14 adds some stronger constraints to base64 encoding which breaks a test. -->
+          <version>1.12</version>
+        </dependency>
+        <dependency>
+          <groupId>io.gsonfire</groupId>
+          <artifactId>gson-fire</artifactId>
+          <version>1.8.0</version>
+        </dependency>
+             <dependency>
+          <groupId>io.swagger</groupId>
+          <artifactId>swagger-annotations</artifactId>
+          <version>1.5.18</version>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-lang3</artifactId>
+          <!-- this is the last version with java 1.7 support -->
+          <version>3.8</version>
+        </dependency>
+        <dependency>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcprov-jdk15to18</artifactId>
+          <version>1.66</version>
+        </dependency>
+        <dependency>
+          <groupId>org.msgpack</groupId>
+          <artifactId>jackson-dataformat-msgpack</artifactId>
+          <version>0.9.0</version>
+        </dependency>
+        <dependency>
+          <groupId>org.threeten</groupId>
+          <artifactId>threetenbp</artifactId>
+          <version>1.3.5</version>
+        </dependency>
+        <dependency>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+          <version>28.2-android</version>
+        </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -23,7 +96,7 @@
     <dependency>
         <groupId>com.algorand</groupId>
         <artifactId>algosdk</artifactId>
-        <version>1.11.0-beta-1</version>
+        <version>1.11.0-beta-2</version>
     </dependency>
   </dependencies>
 </project>

@@ -47,11 +47,14 @@ public class main {
         List<Address> addrs = new ArrayList<>();
         addrs.add(accts.get(1).getAddress());
 
-        List<Long> assets = new ArrayList<>();
-        assets.add(11L);
+        List<Long> fassets = new ArrayList<>();
+        fassets.add(11L);
+
+        List<Long> fapps = new ArrayList<>();
+        fapps.add(6L);
 
         Transaction app_txn = ApplicationCallTransactionBuilder.Builder().sender(accts.get(0).getAddress())
-                .suggestedParams(tsp).applicationId(2L).foreignAssets(assets).accounts(addrs).build();
+                .suggestedParams(tsp).applicationId(2L).foreignApps(fapps).foreignAssets(fassets).accounts(addrs).build();
 
         Transaction logic_txn = PaymentTransactionBuilder.Builder().amount(10000).suggestedParams(tsp)
                 .sender(lsa.getAddress()).receiver(accts.get(0).getAddress()).build();
@@ -64,14 +67,14 @@ public class main {
         stxns.add(accts.get(0).signTransaction(txns[1]));
         stxns.add(lsa.signLogicSigTransaction(txns[2]));
 
-        // DryrunRequest drr = Utils.CreateDryrun(client, stxns, "", 0L, 0L);
+        DryrunRequest drr = Utils.createDryrun(client, stxns, "", 0L, 0L);
 
-        // String fname = "java-drr.msgp";
-        // FileOutputStream outfile = new FileOutputStream(fname);
-        // outfile.write(Encoder.encodeToMsgPack(drr));
-        // outfile.close();
+        String fname = "java-drr.msgp";
+        FileOutputStream outfile = new FileOutputStream(fname);
+        outfile.write(Encoder.encodeToMsgPack(drr));
+        outfile.close();
 
-        // System.out.println("Wrote to " + fname);
+        System.out.println("Wrote to " + fname);
     }
 
     public static LogicSigAccount getLogic(AlgodClient client) throws Exception {
