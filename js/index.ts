@@ -18,7 +18,7 @@ async function generateDryrun(){
         accts[0].addr, lsa.address(), 10000, undefined, undefined, sp
     )
 
-    const app_txn = algosdk.makeApplicationNoOpTxn(accts[0].addr, sp, 2, undefined, [accts[2].addr], undefined, [11])
+    const app_txn = algosdk.makeApplicationNoOpTxn(accts[0].addr, sp, 2, undefined, [accts[2].addr], undefined, undefined)
 
     const logic_txn = algosdk.makePaymentTxnWithSuggestedParams(
          lsa.address(), accts[0].addr, 10000, undefined, undefined, sp

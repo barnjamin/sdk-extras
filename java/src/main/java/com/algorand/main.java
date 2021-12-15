@@ -1,12 +1,8 @@
 package com.algorand;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -17,14 +13,12 @@ import com.algorand.algosdk.account.LogicSigAccount;
 import com.algorand.algosdk.builder.transaction.ApplicationCallTransactionBuilder;
 import com.algorand.algosdk.builder.transaction.PaymentTransactionBuilder;
 import com.algorand.algosdk.crypto.Address;
-import com.algorand.algosdk.crypto.LogicsigSignature;
 import com.algorand.algosdk.transaction.SignedTransaction;
 import com.algorand.algosdk.transaction.Transaction;
 import com.algorand.algosdk.transaction.TxGroup;
 import com.algorand.algosdk.util.Encoder;
 import com.algorand.algosdk.v2.client.Utils;
 import com.algorand.algosdk.v2.client.common.AlgodClient;
-import com.algorand.algosdk.v2.client.common.Client;
 import com.algorand.algosdk.v2.client.common.Response;
 import com.algorand.algosdk.v2.client.model.CompileResponse;
 import com.algorand.algosdk.v2.client.model.DryrunRequest;
@@ -48,10 +42,10 @@ public class main {
         addrs.add(accts.get(1).getAddress());
 
         List<Long> fassets = new ArrayList<>();
-        fassets.add(11L);
+        //fassets.add(11L);
 
         List<Long> fapps = new ArrayList<>();
-        fapps.add(6L);
+        //fapps.add(6L);
 
         Transaction app_txn = ApplicationCallTransactionBuilder.Builder().sender(accts.get(0).getAddress())
                 .suggestedParams(tsp).applicationId(2L).foreignApps(fapps).foreignAssets(fassets).accounts(addrs).build();
