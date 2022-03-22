@@ -6,11 +6,30 @@ import base64
 
 token = ""
 host = "https://node.algoexplorerapi.io"
-#token = "a" * 64
-#host = "http://localhost:4001"
+# token = "a" * 64
+# host = "http://localhost:4001"
 client = algod.AlgodClient(token, host)
 
-ftx_accts = ["C7RYOGEWDT7HZM3HKPSMU7QGWTRWR3EPOQTJ2OHXGYLARD3X62DNWELS34"]
+def fetch_block(round: int):
+    block = client.block_info(round, response_format="msgpack")
+    dblock = msgpack.unpackb(block, raw=True, strict_map_key=False)
+
+    raw_block = dblock[b"block"]
+    if b"txns" not in raw_block:
+        return
+
+    gh = raw_block[b"gh"]
+    gen = raw_block[b"gen"].decode("utf-8")
+
+    for stxn in raw_block[b"txns"]:
+        txn = parse_transaction_msgp(stxn[b"txn"], gh, gen)
+        # TODO: Check if relevant transaction w/ receiver/txn type
+
+        print(txn.get_txid())
+
+        inner_txns = parse_inners_msgp(stxn)
+        if len(inner_txns) > 0:
+            print_ids_recursive(txn, inner_txns, 0)
 
 
 def parse_inners_msgp(stxn):
@@ -31,44 +50,19 @@ def parse_inners_msgp(stxn):
 
 
 def parse_transaction_msgp(
-    txn: transaction.Transaction, gh: bytes, gen: str 
+    txn: transaction.Transaction, gh: bytes, gen: str
 ) -> transaction.Transaction:
-    t = {
-        "gh":gh,
-        "gen":gen,
-        **{k.decode("utf-8"): v for (k, v) in txn.items()}
-    }
+    t = {"gh": gh, "gen": gen, **{k.decode("utf-8"): v for (k, v) in txn.items()}}
     return encoding.future_msgpack_decode(t)
 
-
-def fetch_block(round: int):
-    block = client.block_info(round, response_format="msgpack")
-    dblock = msgpack.unpackb(block, raw=True, strict_map_key=False)
-
-    raw_block = dblock[b"block"]
-    if b"txns" not in raw_block:
-        return
-
-    gh = raw_block[b'gh']
-    gen = raw_block[b'gen'].decode('utf-8')
-
-    for stxn in raw_block[b"txns"]:
-        txn = parse_transaction_msgp(stxn[b"txn"], gh, gen)
-        # TODO: Check if relevant transaction w/ receiver/txn type
-
-        print(txn.get_txid())
-
-        inner_txns = parse_inners_msgp(stxn)
-        if len(inner_txns) > 0:
-            print_ids_recursive(txn, inner_txns, 0)
 
 def print_ids_recursive(txn, inner_txns, level):
     for idx in range(len(inner_txns)):
         (itxn, inners) = inner_txns[idx]
 
         print("{}{}".format("\t" * (level + 1), get_itxn_id(itxn, txn, idx)))
-        if len(inners)>0:
-            print_ids_recursive(itxn, inners, level+1)
+        if len(inners) > 0:
+            print_ids_recursive(itxn, inners, level + 1)
 
 
 def get_itxn_id(
