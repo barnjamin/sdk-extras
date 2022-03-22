@@ -96,7 +96,9 @@
     <dependency>
         <groupId>com.algorand</groupId>
         <artifactId>algosdk</artifactId>
-        <version>1.11.0-beta-2</version>
+        <version>1.12.0</version>
+        <scope>system</scope>
+        <systemPath>/home/ben/java-algorand-sdk/target/algosdk-1.12.0.jar</systemPath>
     </dependency>
   </dependencies>
 </project>

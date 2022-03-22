@@ -1,4 +1,4 @@
-import algosdk from 'algosdk'
+import algosdk, { Transaction, TransactionType } from 'algosdk'
 import {getAccounts} from './sandbox'
 import fs from 'fs';
 
@@ -15,18 +15,18 @@ async function generateDryrun(){
     const sp = await client.getTransactionParams().do()
 
     const pay_txn = algosdk.makePaymentTxnWithSuggestedParams(
-        accts[0].addr, lsa.address(), 10000, undefined, undefined, sp
+        accts[2].addr, lsa.address(), 10000, undefined, undefined, sp
     )
 
-    const app_txn = algosdk.makeApplicationNoOpTxn(accts[0].addr, sp, 2, undefined, [accts[2].addr], undefined, undefined)
+    const app_txn = algosdk.makeApplicationNoOpTxn(accts[1].addr, sp, 1, undefined, [], [1])
 
     const logic_txn = algosdk.makePaymentTxnWithSuggestedParams(
-         lsa.address(), accts[0].addr, 10000, undefined, undefined, sp
+         lsa.address(), accts[2].addr, 10000, undefined, undefined, sp
     )
 
     algosdk.assignGroupID([pay_txn, app_txn, logic_txn])
-    const s_pay = algosdk.signTransaction(pay_txn, accts[0].sk)
-    const s_app = algosdk.signTransaction(app_txn, accts[0].sk)
+    const s_pay = algosdk.signTransaction(pay_txn, accts[2].sk)
+    const s_app = algosdk.signTransaction(app_txn, accts[2].sk)
     const s_logic = algosdk.signLogicSigTransaction(logic_txn, lsa)
 
     const drr = await algosdk.createDryrun({

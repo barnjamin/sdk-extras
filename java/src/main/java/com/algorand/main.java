@@ -22,6 +22,7 @@ import com.algorand.algosdk.v2.client.common.AlgodClient;
 import com.algorand.algosdk.v2.client.common.Response;
 import com.algorand.algosdk.v2.client.model.CompileResponse;
 import com.algorand.algosdk.v2.client.model.DryrunRequest;
+import com.algorand.algosdk.v2.client.model.DryrunResponse;
 import com.algorand.algosdk.v2.client.model.TransactionParametersResponse;
 
 public class main {
@@ -48,7 +49,7 @@ public class main {
         //fapps.add(6L);
 
         Transaction app_txn = ApplicationCallTransactionBuilder.Builder().sender(accts.get(0).getAddress())
-                .suggestedParams(tsp).applicationId(2L).foreignApps(fapps).foreignAssets(fassets).accounts(addrs).build();
+                .suggestedParams(tsp).applicationId(23L).foreignApps(fapps).foreignAssets(fassets).accounts(addrs).build();
 
         Transaction logic_txn = PaymentTransactionBuilder.Builder().amount(10000).suggestedParams(tsp)
                 .sender(lsa.getAddress()).receiver(accts.get(0).getAddress()).build();
@@ -63,12 +64,19 @@ public class main {
 
         DryrunRequest drr = Utils.createDryrun(client, stxns, "", 0L, 0L);
 
-        String fname = "java-drr.msgp";
-        FileOutputStream outfile = new FileOutputStream(fname);
-        outfile.write(Encoder.encodeToMsgPack(drr));
-        outfile.close();
+        Response<DryrunResponse> resp = client.TealDryrun().request(drr).execute();
+        
+        DryrunResponse drResp = resp.body();
 
-        System.out.println("Wrote to " + fname);
+        System.out.println(Utils.appTrace(drResp.txns.get(1)));
+        System.out.println(Utils.lsigTrace(drResp.txns.get(2)));
+
+        //String fname = "java-drr.msgp";
+        //FileOutputStream outfile = new FileOutputStream(fname);
+        //outfile.write(Encoder.encodeToMsgPack(drr));
+        //outfile.close();
+
+        //System.out.println("Wrote to " + fname);
     }
 
     public static LogicSigAccount getLogic(AlgodClient client) throws Exception {
