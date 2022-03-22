@@ -4,11 +4,17 @@ from algosdk.future import transaction
 import msgpack
 import base64
 
+sandbox = True
+
 token = ""
 host = "https://node.algoexplorerapi.io"
-# token = "a" * 64
-# host = "http://localhost:4001"
+
+if sandbox:
+    token = "a" * 64
+    host = "http://localhost:4001"
+
 client = algod.AlgodClient(token, host)
+
 
 def fetch_block(round: int):
     block = client.block_info(round, response_format="msgpack")
@@ -70,8 +76,7 @@ def get_itxn_id(
 ) -> str:
     input = b"TX" + txid_to_bytes(caller.get_txid())
     input += idx.to_bytes(8, "big")
-    d = itxn.dictify()
-    input += base64.b64decode(encoding.msgpack_encode(d))
+    input += base64.b64decode(encoding.msgpack_encode(itxn))
     return bytes_to_txid(encoding.checksum(input))
 
 
