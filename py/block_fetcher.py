@@ -5,7 +5,7 @@ from typing import List, Dict
 import msgpack
 import base64
 
-sandbox = False 
+sandbox = False
 
 token = ""
 host = "https://node.algoexplorerapi.io"
@@ -17,6 +17,10 @@ if sandbox:
 client = algod.AlgodClient(token, host)
 
 
+def _stringify_keys(d: dict) -> dict:
+    return {k.decode("utf-8"): v for (k, v) in d.items()}
+
+
 def parse_signed_transaction_msgp(
     txn: dict, gh: bytes, gen: str
 ) -> transaction.Transaction:
@@ -24,13 +28,14 @@ def parse_signed_transaction_msgp(
         "txn": {
             "gh": gh,
             "gen": gen,
-            **{k.decode("utf-8"): v for (k, v) in txn[b"txn"].items()},
+            **_stringify_keys(txn[b"txn"]),
         }
     }
     if b"sig" in txn:
         stxn["sig"] = txn[b"sig"]
-    #if b"msig" in txn:
-        #stxn["msig"] = {k.decode("utf-8"):v for (k,v) in txn[b"msig"].items()}
+    if b"msig" in txn:
+        stxn["msig"] = _stringify_keys(txn[b"msig"])
+        stxn["msig"]["subsig"] = [_stringify_keys(ss) for ss in stxn["msig"]["subsig"]]
     if "lsig" in txn:
         stxn["lsig"] = txn[b"lsig"]
     if b"sgnr" in txn:
@@ -79,7 +84,9 @@ class EvalDelta:
         if b"gd" in delta:
             ed.global_delta = StateDelta.from_msgp(delta[b"gd"])
         if b"ld" in delta:
-            ed.local_deltas = {k: StateDelta.from_msgp(v) for k, v in delta[b"ld"].items()}
+            ed.local_deltas = {
+                k: StateDelta.from_msgp(v) for k, v in delta[b"ld"].items()
+            }
         if b"lg" in delta:
             ed.logs = delta[b"lg"]
         if b"itx" in delta:
@@ -168,8 +175,8 @@ def fetch_block(round: int):
     for stxn in raw_block[b"txns"]:
         swad = SignedTxnWithAD.from_msgp(stxn, gh, gen)
         ## TODO: Check if relevant transaction w/ receiver/txn type
-
         print(swad.stxn.get_txid())
+
 
 def get_itxn_id(
     itxn: transaction.Transaction, caller: transaction.Transaction, idx: int
