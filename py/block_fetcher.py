@@ -1,7 +1,7 @@
 from algosdk.v2client import algod
 from algosdk import encoding
 from algosdk.future import transaction
-from typing import List, Dict
+from typing import List, Dict, Union
 import msgpack
 import base64
 
@@ -18,14 +18,13 @@ client = algod.AlgodClient(token, host)
 
 
 class SignedTxnWithAD:
-    stxn: transaction.SignedTransaction
+    txn: Union[transaction.SignedTransaction, transaction.Transaction]
     ad: "ApplyData"
 
     @staticmethod
     def from_msgp(stxn, gh, gen) -> "SignedTxnWithAD":
         s = SignedTxnWithAD()
-        if b"txn" in stxn:
-            s.stxn = parse_signed_transaction_msgp(stxn, gh, gen)
+        s.txn = parse_signed_transaction_msgp(stxn, gh, gen)
         s.ad = ApplyData.from_msgp(stxn)
         return s
 
@@ -150,8 +149,8 @@ def parse_signed_transaction_msgp(
     if b"msig" in txn:
         stxn["msig"] = _stringify_keys(txn[b"msig"])
         stxn["msig"]["subsig"] = [_stringify_keys(ss) for ss in stxn["msig"]["subsig"]]
-    if "lsig" in txn:
-        stxn["lsig"] = txn[b"lsig"]
+    if b"lsig" in txn:
+        stxn["lsig"] = _stringify_keys(txn[b"lsig"])
     if b"sgnr" in txn:
         stxn["sgnr"] = txn[b"sgnr"]
     return encoding.future_msgpack_decode(stxn)
@@ -178,6 +177,19 @@ def _get_itxn_id(
     return _bytes_to_txid(encoding.checksum(input))
 
 
+def print_ids_recursive(swad: SignedTxnWithAD, level: int):
+    if swad.ad.eval_delta is None:
+        return
+
+    for itxn in swad.ad.eval_delta.inner_txns:
+        # These are Transactions not SignedTransactions
+        print(
+            "{} {}: {}".format("\t" * (level + 1), itxn.txn.type, swad.txn.get_txid())
+        )
+        if itxn.ad.eval_delta is not None and len(itxn.ad.eval_delta.inner_txns) > 0:
+            print_ids_recursive(itxn, level + 1)
+
+
 if __name__ == "__main__":
     n = 100
     status = client.status()
@@ -197,5 +209,6 @@ if __name__ == "__main__":
 
         for stxn in raw_block[b"txns"]:
             swad = SignedTxnWithAD.from_msgp(stxn, gh, gen)
-            ## TODO: Check if relevant transaction w/ receiver/txn type
-            print(swad.stxn.get_txid())
+            ## TODO: Check if relevant transaction w/ receiver or txn type
+            print("{} {}".format(swad.txn.transaction.type, swad.txn.get_txid()))
+            print_ids_recursive(swad, 0)
