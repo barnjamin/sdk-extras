@@ -17,83 +17,17 @@ if sandbox:
 client = algod.AlgodClient(token, host)
 
 
-def _stringify_keys(d: dict) -> dict:
-    return {k.decode("utf-8"): v for (k, v) in d.items()}
-
-
-def parse_signed_transaction_msgp(
-    txn: dict, gh: bytes, gen: str
-) -> transaction.Transaction:
-    stxn = {
-        "txn": {
-            "gh": gh,
-            "gen": gen,
-            **_stringify_keys(txn[b"txn"]),
-        }
-    }
-    if b"sig" in txn:
-        stxn["sig"] = txn[b"sig"]
-    if b"msig" in txn:
-        stxn["msig"] = _stringify_keys(txn[b"msig"])
-        stxn["msig"]["subsig"] = [_stringify_keys(ss) for ss in stxn["msig"]["subsig"]]
-    if "lsig" in txn:
-        stxn["lsig"] = txn[b"lsig"]
-    if b"sgnr" in txn:
-        stxn["sgnr"] = txn[b"sgnr"]
-    return encoding.future_msgpack_decode(stxn)
-
-
-class StateDelta:
-    action: int
-    bytes: bytes
-    uint: int
+class SignedTxnWithAD:
+    stxn: transaction.SignedTransaction
+    ad: "ApplyData"
 
     @staticmethod
-    def from_msgp(state_delta: dict) -> "StateDelta":
-        sd = StateDelta()
-        if b"at" in state_delta:
-            sd.action = state_delta[b"at"]
-        if b"bs" in state_delta:
-            sd.bytes = state_delta[b"bs"]
-        if b"ui" in state_delta:
-            sd.uint = state_delta[b"ui"]
-        return sd
-
-
-class EvalDelta:
-    global_delta: List[StateDelta]
-    local_deltas: Dict[int, StateDelta]
-    logs: List[str]
-    inner_txns: List["SignedTxnWithAD"]
-
-    def __init__(
-        self,
-        global_delta: StateDelta = None,
-        local_deltas: Dict[int, StateDelta] = None,
-        logs: List[str] = [],
-        inner_txns: List["SignedTxnWithAD"] = [],
-    ):
-        self.global_delta = global_delta
-        self.local_deltas = local_deltas
-        self.logs = logs
-        self.inner_txns = inner_txns
-
-    @staticmethod
-    def from_msgp(delta: dict) -> "EvalDelta":
-        ed = EvalDelta()
-        if b"gd" in delta:
-            ed.global_delta = StateDelta.from_msgp(delta[b"gd"])
-        if b"ld" in delta:
-            ed.local_deltas = {
-                k: StateDelta.from_msgp(v) for k, v in delta[b"ld"].items()
-            }
-        if b"lg" in delta:
-            ed.logs = delta[b"lg"]
-        if b"itx" in delta:
-            ed.inner_txns = [
-                SignedTxnWithAD.from_msgp(itxn, b"", "") for itxn in delta[b"itx"]
-            ]
-        return ed
+    def from_msgp(stxn, gh, gen) -> "SignedTxnWithAD":
+        s = SignedTxnWithAD()
+        if b"txn" in stxn:
+            s.stxn = parse_signed_transaction_msgp(stxn, gh, gen)
+        s.ad = ApplyData.from_msgp(stxn)
+        return s
 
 
 class ApplyData:
@@ -102,7 +36,7 @@ class ApplyData:
     sender_rewards: int
     receiver_rewards: int
     close_rewards: int
-    eval_delta: EvalDelta
+    eval_delta: "EvalDelta"
     config_asset: int
     application_id: int
 
@@ -148,51 +82,100 @@ class ApplyData:
         return ad
 
 
-class SignedTxnWithAD:
-    stxn: transaction.SignedTransaction
-    ad: ApplyData
+class EvalDelta:
+    global_delta: List["StateDelta"]
+    local_deltas: Dict[int, "StateDelta"]
+    logs: List[str]
+    inner_txns: List["SignedTxnWithAD"]
+
+    def __init__(
+        self,
+        global_delta: "StateDelta" = None,
+        local_deltas: Dict[int, "StateDelta"] = None,
+        logs: List[str] = [],
+        inner_txns: List["SignedTxnWithAD"] = [],
+    ):
+        self.global_delta = global_delta
+        self.local_deltas = local_deltas
+        self.logs = logs
+        self.inner_txns = inner_txns
 
     @staticmethod
-    def from_msgp(stxn, gh, gen) -> "SignedTxnWithAD":
-        s = SignedTxnWithAD()
-        if b"txn" in stxn:
-            s.stxn = parse_signed_transaction_msgp(stxn, gh, gen)
-        s.ad = ApplyData.from_msgp(stxn)
-        return s
+    def from_msgp(delta: dict) -> "EvalDelta":
+        ed = EvalDelta()
+        if b"gd" in delta:
+            ed.global_delta = StateDelta.from_msgp(delta[b"gd"])
+        if b"ld" in delta:
+            ed.local_deltas = {
+                k: StateDelta.from_msgp(v) for k, v in delta[b"ld"].items()
+            }
+        if b"lg" in delta:
+            ed.logs = delta[b"lg"]
+        if b"itx" in delta:
+            ed.inner_txns = [
+                SignedTxnWithAD.from_msgp(itxn, b"", "") for itxn in delta[b"itx"]
+            ]
+        return ed
 
 
-def fetch_block(round: int):
-    block = client.block_info(round, response_format="msgpack")
-    dblock = msgpack.unpackb(block, raw=True, strict_map_key=False)
+class StateDelta:
+    action: int
+    bytes: bytes
+    uint: int
 
-    raw_block = dblock[b"block"]
-    if b"txns" not in raw_block:
-        return
-
-    gh = raw_block[b"gh"]
-    gen = raw_block[b"gen"].decode("utf-8")
-
-    for stxn in raw_block[b"txns"]:
-        swad = SignedTxnWithAD.from_msgp(stxn, gh, gen)
-        ## TODO: Check if relevant transaction w/ receiver/txn type
-        print(swad.stxn.get_txid())
-
-
-def get_itxn_id(
-    itxn: transaction.Transaction, caller: transaction.Transaction, idx: int
-) -> str:
-    input = b"TX" + txid_to_bytes(caller.get_txid())
-    input += idx.to_bytes(8, "big")
-    input += base64.b64decode(encoding.msgpack_encode(itxn))
-    return bytes_to_txid(encoding.checksum(input))
+    @staticmethod
+    def from_msgp(state_delta: dict) -> "StateDelta":
+        sd = StateDelta()
+        if b"at" in state_delta:
+            sd.action = state_delta[b"at"]
+        if b"bs" in state_delta:
+            sd.bytes = state_delta[b"bs"]
+        if b"ui" in state_delta:
+            sd.uint = state_delta[b"ui"]
+        return sd
 
 
-def txid_to_bytes(txid):
+def parse_signed_transaction_msgp(
+    txn: dict, gh: bytes, gen: str
+) -> transaction.Transaction:
+    stxn = {
+        "txn": {
+            "gh": gh,
+            "gen": gen,
+            **_stringify_keys(txn[b"txn"]),
+        }
+    }
+    if b"sig" in txn:
+        stxn["sig"] = txn[b"sig"]
+    if b"msig" in txn:
+        stxn["msig"] = _stringify_keys(txn[b"msig"])
+        stxn["msig"]["subsig"] = [_stringify_keys(ss) for ss in stxn["msig"]["subsig"]]
+    if "lsig" in txn:
+        stxn["lsig"] = txn[b"lsig"]
+    if b"sgnr" in txn:
+        stxn["sgnr"] = txn[b"sgnr"]
+    return encoding.future_msgpack_decode(stxn)
+
+
+def _stringify_keys(d: dict) -> dict:
+    return {k.decode("utf-8"): v for (k, v) in d.items()}
+
+
+def _txid_to_bytes(txid):
     return base64.b32decode(encoding._correct_padding(txid))
 
 
-def bytes_to_txid(b):
+def _bytes_to_txid(b):
     return base64.b32encode(b).strip(b"=").decode("utf-8")
+
+
+def _get_itxn_id(
+    itxn: transaction.Transaction, caller: transaction.Transaction, idx: int
+) -> str:
+    input = b"TX" + _txid_to_bytes(caller.get_txid())
+    input += idx.to_bytes(8, "big")
+    input += base64.b64decode(encoding.msgpack_encode(itxn))
+    return _bytes_to_txid(encoding.checksum(input))
 
 
 if __name__ == "__main__":
@@ -200,4 +183,19 @@ if __name__ == "__main__":
     status = client.status()
     last_n = max(status["last-round"] - n, 0)
     for i in range(n):
-        fetch_block(last_n + i)
+        round = last_n + i
+
+        block = client.block_info(round, response_format="msgpack")
+        dblock = msgpack.unpackb(block, raw=True, strict_map_key=False)
+
+        raw_block = dblock[b"block"]
+        if b"txns" not in raw_block:
+            continue
+
+        gh = raw_block[b"gh"]
+        gen = raw_block[b"gen"].decode("utf-8")
+
+        for stxn in raw_block[b"txns"]:
+            swad = SignedTxnWithAD.from_msgp(stxn, gh, gen)
+            ## TODO: Check if relevant transaction w/ receiver/txn type
+            print(swad.stxn.get_txid())
