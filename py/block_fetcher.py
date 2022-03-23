@@ -168,7 +168,7 @@ def _bytes_to_txid(b):
     return base64.b32encode(b).strip(b"=").decode("utf-8")
 
 
-def _get_itxn_id(
+def get_itxn_id(
     itxn: transaction.Transaction, caller: transaction.Transaction, idx: int
 ) -> str:
     input = b"TX" + _txid_to_bytes(caller.get_txid())
@@ -181,10 +181,13 @@ def print_ids_recursive(swad: SignedTxnWithAD, level: int):
     if swad.ad.eval_delta is None:
         return
 
-    for itxn in swad.ad.eval_delta.inner_txns:
+    for idx in range(len(swad.ad.eval_delta.inner_txns)):
+        itxn = swad.ad.eval_delta.inner_txns[idx]
         # These are Transactions not SignedTransactions
         print(
-            "{} {}: {}".format("\t" * (level + 1), itxn.txn.type, swad.txn.get_txid())
+            "{} {}: {}".format(
+                "\t" * (level + 1), itxn.txn.type, get_itxn_id(itxn.txn, swad.txn, idx)
+            )
         )
         if itxn.ad.eval_delta is not None and len(itxn.ad.eval_delta.inner_txns) > 0:
             print_ids_recursive(itxn, level + 1)
