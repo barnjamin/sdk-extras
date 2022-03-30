@@ -37,10 +37,10 @@ slogic_txn = transaction.LogicSigTransaction(logic_txn, lsa)
 
 print("Valid sig? {}".format(spay_txn.verify_signature()))
 
-#drr = transaction.create_dryrun(client, [spay_txn, sapp_txn, slogic_txn])
+# drr = transaction.create_dryrun(client, [spay_txn, sapp_txn, slogic_txn])
 #
-#resp = dryrun_results.DryrunResponse(client.dryrun(drr))
-#for txn in resp.txns:
+# resp = dryrun_results.DryrunResponse(client.dryrun(drr))
+# for txn in resp.txns:
 #    print("\nApp Trace:\n{}".format(txn.app_trace(0)))
 #    print("\nLsig Trace\n{}".format(txn.lsig_trace(0)))
 
