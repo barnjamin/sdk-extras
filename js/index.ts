@@ -28,6 +28,8 @@ async function generateDryrun(){
     const s_pay = algosdk.signTransaction(pay_txn, accts[2].sk)
     const s_app = algosdk.signTransaction(app_txn, accts[2].sk)
     const s_logic = algosdk.signLogicSigTransaction(logic_txn, lsa)
+    console.log(s_logic)
+    return
 
     const drr = await algosdk.createDryrun({
         client: client, 
