@@ -39,29 +39,22 @@ const block_number = 10;
 class StateDelta {
   action: number = 0;
   bytes: Uint8Array = new Uint8Array();
-  uint: number = 0;
+  uint: number | undefined = undefined;
 
   static fromMsgp(state_delta: any): StateDelta {
     const sd = new StateDelta();
-    if ("at" in state_delta) {
-      sd.action = state_delta["at"];
-    }
-    if ("bs" in state_delta) {
-      sd.bytes = state_delta["bs"];
-    }
-    if ("ui" in state_delta) {
-      sd.uint = state_delta["ui"];
-    }
-
+    if ("at" in state_delta) sd.action = state_delta["at"];
+    if ("bs" in state_delta) sd.bytes = state_delta["bs"];
+    if ("ui" in state_delta) sd.uint = state_delta["ui"];
     return sd;
   }
 
   get_obj_for_encoding() {
-    return {
-      at: this.action,
-      bs: this.bytes,
-      ui: this.uint,
-    };
+    const obj: any = {};
+    if (this.action !== 0) obj["at"] = this.action;
+    if (this.bytes.length > 0) obj["bs"] = this.bytes;
+    if (this.uint !== undefined) obj["ui"] = this.uint;
+    return obj;
   }
 }
 
