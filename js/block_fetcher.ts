@@ -21,15 +21,16 @@ const block_number = 10;
     const regend = stwad.get_obj_for_encoding();
 
     if (!(await verifyProofHash(block.block.txn, stwad))) {
-        console.log("Hash doesnt match? ")
+      console.log("Hash doesnt match? ");
       for (const it of stxn["dt"].itx) {
         console.log("From block", it);
       }
       for (const it of regend["dt"].itx) {
         console.log("Regend", it);
       }
+    } else {
+      console.log("Hash matched for", stwad.txn.txn.txID());
     }
-    console.log("Hash matched for", stwad.txn.txn.txID())
   }
 })().catch((e) => {
   console.error(e);
