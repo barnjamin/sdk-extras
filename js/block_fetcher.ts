@@ -20,14 +20,10 @@ const block_number = 10;
     );
     const regend = stwad.get_obj_for_encoding();
 
-    if (!(await verifyProofHash(block.block.txn, stwad))) {
+    if (!(await verifyProofHash(block_number, stwad))) {
       console.log("Hash doesnt match? ");
-      for (const it of stxn["dt"].itx) {
-        console.log("From block", it);
-      }
-      for (const it of regend["dt"].itx) {
-        console.log("Regend", it);
-      }
+      console.log("From block", stxn);
+      console.log("Regend", stwad);
     } else {
       console.log("Hash matched for", stwad.txn.txn.txID());
     }
@@ -223,7 +219,7 @@ class SignedTransactionWithAD {
 }
 
 async function verifyProofHash(
-  txnroot: string,
+  block_number: number,
   stxn: SignedTransactionWithAD
 ): Promise<boolean> {
   const proof = await client.getProof(block_number, stxn.txn.txn.txID()).do();
