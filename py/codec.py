@@ -14,24 +14,25 @@ accts = get_accounts()
 
 sp = client.suggested_params()
 
-pay_txn = transaction.PaymentTxn(addr1, sp, addr2, 10000)
+pay_txn = transaction.PaymentTxn(addr1, sp, addr2, 0, close_remainder_to=addr2)
+pay_txn.receiver = encoding.encode_address(bytes(32) )
 with open("pay.txn", "w") as f:
     f.write(encoding.msgpack_encode(pay_txn))
 
-spay_txn = pay_txn.sign(pk1)
-with open("signed_pay.txn", "w") as f:
-    f.write(encoding.msgpack_encode(spay_txn))
-
-
-with open("pay.txn", "r") as f:
-    recovered_txn = encoding.future_msgpack_decode(f.read())
-
-print(recovered_txn)
-
-with open("signed_pay.txn", "r") as f:
-    recovered_signed_txn = encoding.future_msgpack_decode(f.read())
-
-print(recovered_signed_txn)
+#spay_txn = pay_txn.sign(pk1)
+#with open("signed_pay.txn", "w") as f:
+#    f.write(encoding.msgpack_encode(spay_txn))
+#
+#
+#with open("pay.txn", "r") as f:
+#    recovered_txn = encoding.future_msgpack_decode(f.read())
+#
+#print(recovered_txn)
+#
+#with open("signed_pay.txn", "r") as f:
+#    recovered_signed_txn = encoding.future_msgpack_decode(f.read())
+#
+#print(recovered_signed_txn)
 
 # app_txn = transaction.ApplicationCallTxn(acct[0], sp, 1, transaction.OnComplete.NoOpOC, accounts=[accts[2][0]])
 # logic_txn = transaction.PaymentTxn(lsa.address(), sp, acct[0], 10000)

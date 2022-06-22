@@ -1,6 +1,7 @@
 import algosdk, { Transaction, TransactionType } from 'algosdk'
 import {getAccounts} from './sandbox'
 import fs from 'fs';
+import { removeUndefinedProperties } from 'algosdk/dist/types/src/utils/utils';
 
 const token = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const server = 'http://127.0.0.1';
@@ -29,7 +30,7 @@ async function generateDryrun(){
     const s_app = algosdk.signTransaction(app_txn, accts[2].sk)
     const s_logic = algosdk.signLogicSigTransaction(logic_txn, lsa)
     console.log(s_logic)
-    return
+
 
     const drr = await algosdk.createDryrun({
         client: client, 
@@ -40,10 +41,12 @@ async function generateDryrun(){
         ]
     })
 
+
     const filename = 'js-drr.msgp'
     fs.writeFileSync(filename, algosdk.encodeObj(drr.get_obj_for_encoding(true)))
 
-    console.log("Wrote to "+filename)
+    //const x = new algosdk.DryrunResult(undefined)
+    //console.log("Wrote to "+filename)
 }
 
 async function getLogicSig(): Promise<algosdk.LogicSigAccount> {
