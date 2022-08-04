@@ -29,7 +29,6 @@ async function generateDryrun(){
     const s_pay = algosdk.signTransaction(pay_txn, accts[2].sk)
     const s_app = algosdk.signTransaction(app_txn, accts[2].sk)
     const s_logic = algosdk.signLogicSigTransaction(logic_txn, lsa)
-    console.log(s_logic)
 
 
     const drr = await algosdk.createDryrun({
@@ -41,6 +40,8 @@ async function generateDryrun(){
         ]
     })
 
+    const drres = await client.dryrun(drr).do()
+    console.log(drres)
 
     const filename = 'js-drr.msgp'
     fs.writeFileSync(filename, algosdk.encodeObj(drr.get_obj_for_encoding(true)))

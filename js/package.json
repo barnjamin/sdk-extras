@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node index.ts",
-    "src":"ts-node src_map.ts",
+    "src": "ts-node src_map.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -17,7 +17,7 @@
     "typescript": "^4.5.2"
   },
   "dependencies": {
-    "algosdk": "^1.17.0",
+    "algosdk": "^1.18.0",
     "crypto-js": "^4.1.1",
     "merkletreejs": "^0.2.31",
     "tweetnacl": "^1.0.3"
