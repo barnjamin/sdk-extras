@@ -5,7 +5,7 @@ from typing import List, Dict, Union
 import msgpack
 import base64
 
-sandbox = False
+sandbox = True 
 
 token = ""
 host = "https://node.algoexplorerapi.io"
@@ -194,24 +194,29 @@ def print_ids_recursive(swad: SignedTxnWithAD, level: int):
 
 
 if __name__ == "__main__":
-    n = 100
+    n = 10
     status = client.status()
     last_n = max(status["last-round"] - n, 0)
     for i in range(n):
         round = last_n + i
 
-        block = client.block_info(round, response_format="msgpack")
-        dblock = msgpack.unpackb(block, raw=True, strict_map_key=False)
+        block = client.block_info(round)
+        print(block['block'].keys())
+        #dblock = msgpack.unpackb(block, raw=True, strict_map_key=False)
 
-        raw_block = dblock[b"block"]
-        if b"txns" not in raw_block:
-            continue
+        #raw_block = dblock[b"block"]
+        #if b"txns" not in raw_block:
+        #    continue
 
-        gh = raw_block[b"gh"]
-        gen = raw_block[b"gen"].decode("utf-8")
+        #gh = raw_block[b"gh"]
+        #gen = raw_block[b"gen"].decode("utf-8")
 
-        for stxn in raw_block[b"txns"]:
-            swad = SignedTxnWithAD.from_msgp(stxn, gh, gen)
-            ## TODO: Check if relevant transaction w/ receiver or txn type
-            print("{} {}".format(swad.txn.transaction.type, swad.txn.get_txid()))
-            print_ids_recursive(swad, 0)
+        #print(raw_block.keys())
+        ##print(raw_block[b"seed"])
+        #continue
+
+        #for stxn in raw_block[b"txns"]:
+        #    swad = SignedTxnWithAD.from_msgp(stxn, gh, gen)
+        #    ## TODO: Check if relevant transaction w/ receiver or txn type
+        #    print("{} {}".format(swad.txn.transaction.type, swad.txn.get_txid()))
+        #    print_ids_recursive(swad, 0)
