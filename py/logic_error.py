@@ -1,5 +1,5 @@
 import re
-from inspect import currentframe
+from inspect import currentframe, getframeinfo
 import base64
 from pyteal import *
 from algosdk.source_map import SourceMap
@@ -53,13 +53,16 @@ class LogicException(Exception):
     def trace(self, lines: int = 5) -> str:
         return tiny_trace(self.lines, self.line_no, lines)
 
+def comment_for_assert(cf)->str:
+    finfo = getframeinfo(cf)
+    return f"{finfo.filename}:L{finfo.lineno}"
 
 def demo():
     addr, sk = get_accounts().pop()
 
     client = AlgodClient("a"*64, "http://localhost:4001")
 
-    program = Seq(Assert(Int(0), comment=f"logic_error.py:L{currentframe().f_lineno}"), Int(1))
+    program = Seq(Assert(Int(0), comment=comment_for_assert(currentframe())), Int(1))
     approval = compileTeal(program, mode=Mode.Application, version=6)
 
     result = client.compile(approval, source_map=True)
