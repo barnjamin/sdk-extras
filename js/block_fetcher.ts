@@ -71,9 +71,7 @@ class EvalDelta {
     const ed = new EvalDelta({});
 
     if ("gd" in delta) {
-      for (const idx of delta["gd"]) {
-        ed.global_delta.push(StateDelta.fromMsgp(delta["gd"]));
-      }
+      ed.global_delta.push(StateDelta.fromMsgp(delta["gd"]));
     }
 
     if ("ld" in delta) {
