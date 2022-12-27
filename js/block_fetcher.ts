@@ -2,12 +2,12 @@ import sha512 from "js-sha512";
 import algosdk from "algosdk";
 import * as msgpack from "algo-msgpack-with-bigint";
 
-const server = "http://localhost";
-const token = "a".repeat(64);
-const port = 4001;
+const server = "https://mainnet-api.algonode.cloud";
+const token = "";
+const port = "";
 const client = new algosdk.Algodv2(token, server, port);
 
-const block_number = 10;
+const block_number = 25840670;
 
 (async () => {
   let block = await client.block(block_number).do();
@@ -18,15 +18,14 @@ const block_number = 10;
       block.block.gen,
       stxn
     );
-    const regend = stwad.get_obj_for_encoding();
 
-    if (!(await verifyProofHash(block_number, stwad))) {
-      console.log("Hash doesnt match? ");
-      console.log("From block", stxn);
-      console.log("Regend", stwad);
-    } else {
-      console.log("Hash matched for", stwad.txn.txn.txID());
+    if (
+      stwad.txn.txn.txID() ==
+      "3QS25FJ7I4DHGUJNKG3LPV2WPIMYPKY7TAHTTSLXNREJ6VCWDXJA"
+    ) {
+      console.log(stxn);
     }
+
   }
 })().catch((e) => {
   console.error(e);
@@ -40,7 +39,7 @@ class StateDelta {
   static fromMsgp(state_delta: any): StateDelta {
     const sd = new StateDelta();
     if ("at" in state_delta) sd.action = state_delta["at"];
-    if ("bs" in state_delta) sd.bytes = state_delta["bs"];
+    if ("bs" in state_delta) sd.bytes = Buffer.from(state_delta["bs"]);
     if ("ui" in state_delta) sd.uint = state_delta["ui"];
     return sd;
   }
@@ -56,7 +55,7 @@ class StateDelta {
 
 class EvalDelta {
   global_delta: StateDelta[] = [];
-  local_deltas: { [key: number]: StateDelta[] } = {};
+  local_deltas: { [key: string]: StateDelta }[] = [];
   logs: string[] = [];
   inner_txns: SignedTransactionWithAD[] = [];
 
@@ -71,12 +70,19 @@ class EvalDelta {
     const ed = new EvalDelta({});
 
     if ("gd" in delta) {
-      ed.global_delta.push(StateDelta.fromMsgp(delta["gd"]));
+      for (const gdk of Object.keys(delta["gd"])) {
+        ed.global_delta.push(StateDelta.fromMsgp(delta["gd"][gdk]));
+      }
     }
 
     if ("ld" in delta) {
-      for (const k of delta["ld"]) {
-        ed.local_deltas[k].push(StateDelta.fromMsgp(delta["ld"][k]));
+      for (const i of Object.keys(delta["ld"])) {
+        const deltas: { [key: string]: StateDelta } = {};
+        for (const key of Object.keys(delta["ld"][i])) {
+          const decoded = StateDelta.fromMsgp(delta["ld"][i][key]);
+          deltas[Buffer.from(key).toString("base64")] = decoded;
+        }
+        ed.local_deltas.push(deltas);
       }
     }
 
