@@ -2,6 +2,7 @@ from algosdk.v2client import algod
 from algosdk import encoding
 from algosdk.future import transaction
 from typing import List, Dict, Union
+from sandbox import get_accounts
 import msgpack
 import base64
 
@@ -82,15 +83,15 @@ class ApplyData:
 
 
 class EvalDelta:
-    global_delta: List["StateDelta"]
-    local_deltas: Dict[int, "StateDelta"]
+    global_delta: List["StateDelta"] | None
+    local_deltas: Dict[int, "StateDelta"] | None
     logs: List[str]
     inner_txns: List["SignedTxnWithAD"]
 
     def __init__(
         self,
-        global_delta: "StateDelta" = None,
-        local_deltas: Dict[int, "StateDelta"] = None,
+        global_delta: List["StateDelta"] | None = None,
+        local_deltas: Dict[int, "StateDelta"] | None = None,
         logs: List[str] = [],
         inner_txns: List["SignedTxnWithAD"] = [],
     ):
@@ -103,7 +104,9 @@ class EvalDelta:
     def from_msgp(delta: dict) -> "EvalDelta":
         ed = EvalDelta()
         if b"gd" in delta:
-            ed.global_delta = StateDelta.from_msgp(delta[b"gd"])
+            ed.global_delta = [
+                StateDelta.from_msgp(delta[b"gd"][idx]) for idx in delta[b"gd"]
+            ]
         if b"ld" in delta:
             ed.local_deltas = {
                 k: StateDelta.from_msgp(v) for k, v in delta[b"ld"].items()
@@ -128,7 +131,7 @@ class StateDelta:
         if b"at" in state_delta:
             sd.action = state_delta[b"at"]
         if b"bs" in state_delta:
-            sd.bytes = state_delta[b"bs"]
+            sd.bytes = base64.b64encode(state_delta[b"bs"])
         if b"ui" in state_delta:
             sd.uint = state_delta[b"ui"]
         return sd
@@ -194,38 +197,32 @@ def print_ids_recursive(swad: SignedTxnWithAD, level: int):
 
 
 if __name__ == "__main__":
-    n = 2
-    #status = client.status()
-    #last_n = max(status["last-round"] - n, 0)
-    last_n = 23047873 
 
-    for i in range(n):
-        round = last_n + i
+    round = 25840670
 
-        block = client.block_info(round, response_format='msgp')
-        dblock = msgpack.unpackb(block, raw=True, strict_map_key=False)
+    block = client.block_info(round, response_format="msgp")
+    dblock = msgpack.unpackb(block, raw=True, strict_map_key=False)
 
-        raw_block = dblock[b"block"]
-        if b"txns" not in raw_block:
-            continue
+    raw_block = dblock[b"block"]
+    if b"txns" not in raw_block:
+        exit(0)
 
-        gh = raw_block[b"gh"]
-        gen = raw_block[b"gen"].decode("utf-8")
+    gh = raw_block[b"gh"]
+    gen = raw_block[b"gen"].decode("utf-8")
 
-        for stxn in raw_block[b"txns"]:
-            swad = SignedTxnWithAD.from_msgp(stxn, gh, gen)
-            #if swad.txn.get_txid() == '2DIIP3NUOHH24UIF7GR3HKKZHYECVYG64UIXEY3SKZIEWRLIVAFA':
-            #    print(swad.__dict__)
-            #    print(swad.txn.transaction)
-            #    print(swad.ad.__dict__)
+    tx_count = len(raw_block[b"txns"])
+    print(f"Round {round} had {tx_count} txns")
 
-            #print(swad.txn.transaction)
-            if swad.txn.transaction.sender == "5QXZBUVXGTFM5RQTMNKJEF7STJ3SOXCXHM5O5YXOJ5XMYO7ZNZWZEZNXOE":
-                print(swad.__dict__)
-                print(swad.txn.get_txid())
-                print(swad.txn.transaction)
-                print(swad.ad.__dict__)
+    for stxn in raw_block[b"txns"]:
+        swad = SignedTxnWithAD.from_msgp(stxn, gh, gen)
 
-            ## TODO: Check if relevant transaction w/ receiver or txn type
-            #print("{} {}".format(swad.txn.transaction.type, swad.txn.get_txid()))
-            #print_ids_recursive(swad, 0)
+        if (
+            swad.txn.get_txid()
+            == "3QS25FJ7I4DHGUJNKG3LPV2WPIMYPKY7TAHTTSLXNREJ6VCWDXJA"
+        ):
+            for gd in swad.ad.eval_delta.global_delta:
+                print(gd.__dict__)
+
+    #    ## TODO: Check if relevant transaction w/ receiver or txn type
+    #    #print("{} {}".format(swad.txn.transaction.type, swad.txn.get_txid()))
+    #    #print_ids_recursive(swad, 0)
