@@ -6,20 +6,24 @@
   "scripts": {
     "start": "ts-node index.ts",
     "src": "ts-node src_map.ts",
+    "fetch": "ts-node block_fetcher.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/msgpack-lite": "^0.1.8",
     "nodemon": "^2.0.15",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.2"
   },
   "dependencies": {
-    "algosdk": "^1.19.1",
+    "@msgpack/msgpack": "^2.8.0",
+    "algosdk": "^1.24.1",
     "crypto-js": "^4.1.1",
     "merkletreejs": "^0.2.31",
+    "msgpack-lite": "^0.1.26",
     "tweetnacl": "^1.0.3"
   }
 }

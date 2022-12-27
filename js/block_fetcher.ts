@@ -1,6 +1,8 @@
 import sha512 from "js-sha512";
 import algosdk from "algosdk";
 import * as msgpack from "algo-msgpack-with-bigint";
+import * as mpk from "msgpack-lite";
+import fs from "fs";
 
 const server = "https://mainnet-api.algonode.cloud";
 const token = "";
@@ -10,7 +12,24 @@ const client = new algosdk.Algodv2(token, server, port);
 const block_number = 25840670;
 
 (async () => {
-  let block = await client.block(block_number).do();
+
+  // const block = await client.block(block_number).do();
+   let rawBlock = await client.block(block_number).doRaw();
+   const block = mpk.decode(rawBlock, {
+     codec: mpk.createCodec({ useraw: true }),
+   }) as Record<string, any>;
+
+  // // @ts-ignore
+  // block.block.txns.forEach((t) => {
+  //   if ("dt" in t) {
+  //     if ("gd" in t["dt"]) {
+  //       for (const k of Object.keys(t["dt"]["gd"])) {
+  //         const v = t["dt"]["gd"][k];
+  //         if (v.bs) console.log(v.bs.toString("base64"));
+  //       }
+  //     }
+  //   }
+  // });
 
   for (const stxn of block.block.txns) {
     const stwad = new SignedTransactionWithAD(
@@ -19,11 +38,10 @@ const block_number = 25840670;
       stxn
     );
 
-    if (
-      stwad.txn.txn.txID() ==
-      "3QS25FJ7I4DHGUJNKG3LPV2WPIMYPKY7TAHTTSLXNREJ6VCWDXJA"
-    ) {
-      console.log(stxn);
+    if(stwad.txn.txn.txID() == "3QS25FJ7I4DHGUJNKG3LPV2WPIMYPKY7TAHTTSLXNREJ6VCWDXJA") {
+      stwad.apply_data?.eval_delta?.global_delta.forEach((gd)=>{
+        console.log(gd.bytes.toString("base64"))
+      })
     }
 
   }
@@ -33,7 +51,7 @@ const block_number = 25840670;
 
 class StateDelta {
   action: number = 0;
-  bytes: Uint8Array = new Uint8Array();
+  bytes: Buffer = Buffer.from("");
   uint: number | undefined = undefined;
 
   static fromMsgp(state_delta: any): StateDelta {
@@ -47,7 +65,7 @@ class StateDelta {
   get_obj_for_encoding() {
     const obj: any = {};
     if (this.action !== 0) obj["at"] = this.action;
-    if (this.bytes.length > 0) obj["bs"] = this.bytes;
+    if (this.bytes.length > 0) obj["bs"] = this.bytes.toString("base64");
     if (this.uint !== undefined) obj["ui"] = this.uint;
     return obj;
   }
@@ -71,6 +89,7 @@ class EvalDelta {
 
     if ("gd" in delta) {
       for (const gdk of Object.keys(delta["gd"])) {
+        // console.log("RAW: ", delta["gd"][gdk])
         ed.global_delta.push(StateDelta.fromMsgp(delta["gd"][gdk]));
       }
     }
@@ -148,8 +167,9 @@ class ApplyData {
     if ("rc" in apply_data) ad.close_rewards = apply_data["rc"];
     if ("caid" in apply_data) ad.config_asset = apply_data["caid"];
     if ("apid" in apply_data) ad.application_id = apply_data["apid"];
-    if ("dt" in apply_data)
+    if ("dt" in apply_data) {
       ad.eval_delta = EvalDelta.fromMsgp(apply_data["dt"]);
+    }
 
     return ad;
   }
@@ -179,7 +199,9 @@ class SignedTransactionWithAD {
     const t = stib.txn as algosdk.EncodedTransaction;
     // Manually add gh/gen to construct a correct transaction object
     t.gh = gh;
-    t.gen = gen;
+    t.gen = gen.toString();
+
+    t.type = t.type.toString()
 
     const stxn = {
       txn: algosdk.Transaction.from_obj_for_encoding(t),
@@ -222,14 +244,14 @@ class SignedTransactionWithAD {
   }
 }
 
-async function verifyProofHash(
-  block_number: number,
-  stxn: SignedTransactionWithAD
-): Promise<boolean> {
-  const proof = await client.getProof(block_number, stxn.txn.txn.txID()).do();
-  const generated = Buffer.from(stxn.hash()).toString("base64");
-  return proof.stibhash == generated;
-}
+// async function verifyProofHash(
+//   block_number: number,
+//   stxn: SignedTransactionWithAD
+// ): Promise<boolean> {
+//   const proof = await client.getProof(block_number, stxn.txn.txn.txID()).do();
+//   const generated = Buffer.from(stxn.hash()).toString("base64");
+//   return proof.stibhash == generated;
+// }
 
 function hasher(data: Uint8Array): Uint8Array {
   const tohash = concatArrays(Buffer.from("STIB"), new Uint8Array(data));
